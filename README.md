@@ -23,7 +23,7 @@ Dado que estos equipos son Modbus RTU, para obtener los datos mediante Modbus TC
 - https://flows.nodered.org/flow/7c058a46b095af5b8bd469c7c5328454 
 - https://gist.github.com/jecrespo/7c058a46b095af5b8bd469c7c5328454 
 
-##Datos recogidos:
+## Datos recogidos:
 
 |Description|Register|Units|Size|Data Type|
 |---|---|---|---|---|
