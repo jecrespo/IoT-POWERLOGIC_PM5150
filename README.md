@@ -15,6 +15,7 @@ Dado que estos equipos son Modbus RTU, para obtener los datos mediante Modbus TC
 - User Guide: https://download.schneider-electric.com/files?p_enDocType=User+guide&p_File_Name=DOCA0110EN-04.pdf&p_Doc_Ref=DOCA0110EN
 
 Script python: Recoge los datos y los guarda en una BBDD
+- Repositorio Node-RED: https://github.com/aprendiendonodered/POWERLOGIC_PM5150
 
 Node-RED: recoge los datos y los publica en MQTT y los muestra en dashboard
 
