@@ -1,0 +1,1044 @@
+[
+    {
+        "id": "4dc335ce.9b905c",
+        "type": "subflow",
+        "name": "Power Meter Schneider Power Logic PM5110",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 40,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "3e9e8646.c1f65a"
+                    },
+                    {
+                        "id": "28bfed2e.2fe892"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 980,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "2af0243a.eba7ec",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "color": "#DDAA99"
+    },
+    {
+        "id": "64e41f1d.aeb8b",
+        "type": "modbus-flex-getter",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "showStatusActivities": false,
+        "showErrors": false,
+        "logIOActivities": false,
+        "server": "650993c2.faa71c",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": false,
+        "x": 530,
+        "y": 80,
+        "wires": [
+            [
+                "2f379b2a.a47784"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "3e9e8646.c1f65a",
+        "type": "function",
+        "z": "4dc335ce.9b905c",
+        "name": "Datos Modbus",
+        "func": "var id = msg.payload;\n\nmsg.payload = { value: msg.payload, 'fc': 3, 'unitid': id, 'address': 2999 , 'quantity': 120 };\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 200,
+        "y": 80,
+        "wires": [
+            [
+                "64e41f1d.aeb8b",
+                "c1edbb80.6b60f8"
+            ]
+        ]
+    },
+    {
+        "id": "d80fbeb6.69a2d",
+        "type": "function",
+        "z": "4dc335ce.9b905c",
+        "name": "Datos Modbus",
+        "func": "var id = flow.get('unitid');\n\nmsg.payload = { value: msg.payload, 'fc': 3, 'unitid': id, 'address': 21299 , 'quantity': 40 };\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 420,
+        "y": 200,
+        "wires": [
+            [
+                "64e41f1d.aeb8b"
+            ]
+        ]
+    },
+    {
+        "id": "c1edbb80.6b60f8",
+        "type": "delay",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 240,
+        "y": 200,
+        "wires": [
+            [
+                "d80fbeb6.69a2d"
+            ]
+        ]
+    },
+    {
+        "id": "2f379b2a.a47784",
+        "type": "join",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "mode": "custom",
+        "build": "array",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "2",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 710,
+        "y": 80,
+        "wires": [
+            [
+                "2af0243a.eba7ec"
+            ]
+        ]
+    },
+    {
+        "id": "2af0243a.eba7ec",
+        "type": "function",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "func": "var newMsg = {};\nvar obj = {};\nvar values = ['I_A','I_B','I_C','I_N','V_A','V_B','V_C','V_N','P_A','P_B','P_C','potencia_activa_total','potencia_reactiva_total','factor_potencia_total','frecuencia','THD_I_A','THD_I_B','THD_I_C','THD_V_A','THD_V_B','THD_V_C']\nvar registros = [0,2,4,6,28,30,32,34,54,56,58,60,68,84,110,0,2,4,30,32,34]\nvar fLen = registros.length;\n\nfor (i = 0; i < fLen; i++) {\n    const buf = Buffer.allocUnsafe(4);\n    var dato = registros[i];\n    if (i<15){\n        buf.writeUInt16BE(msg.payload[0][dato],0);\n        buf.writeUInt16BE(msg.payload[0][dato+1],2);\n        if (values[i] == 'factor_potencia_total'){\n            if ( buf.readFloatBE(0).toFixed(3) > 1) {\n                 obj[values[i]] = ((2 - buf.readFloatBE(0)) *  -100).toFixed(3);\n            }\n            else {\n                obj[values[i]] = buf.readFloatBE(0).toFixed(3) * 100;\n            }\n        }\n        else {\n            obj[values[i]] = buf.readFloatBE(0).toFixed(3);\n        }\n    }\n    else {\n        buf.writeUInt16BE(msg.payload[1][dato],0);\n        buf.writeUInt16BE(msg.payload[1][dato+1],2);\n        obj[values[i]] = buf.readFloatBE(0).toFixed(3);\n    }\n    \n    //node.warn(`${values[i]} : ${buf.readFloatBE(0).toFixed(3)}`)\n}\n\nobj['unitid'] = flow.get('unitid');\nnewMsg.payload = obj;\n\nreturn newMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 860,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "28bfed2e.2fe892",
+        "type": "change",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "unitid",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 200,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "650993c2.faa71c",
+        "type": "modbus-client",
+        "name": "Power Meter",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "tcpHost": "10.10.10.10",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "unit_id": 1,
+        "commandDelay": 1,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true
+    },
+    {
+        "id": "ab7d75a0.a74bc8",
+        "type": "tab",
+        "label": "Consumo PM5110",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "5181add4.f282f4",
+        "type": "inject",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "1",
+        "payloadType": "num",
+        "x": 90,
+        "y": 120,
+        "wires": [
+            [
+                "d8cdaff9.7c55a"
+            ]
+        ]
+    },
+    {
+        "id": "30529a9d.253636",
+        "type": "debug",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 790,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "ca55abd0.232e58",
+        "type": "mqtt out",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "11661772.cec7b9",
+        "x": 890,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "7403a443.d6c0fc",
+        "type": "split",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "topic",
+        "x": 510,
+        "y": 300,
+        "wires": [
+            [
+                "81aab286.89725",
+                "d9ba20f3.49b02"
+            ]
+        ]
+    },
+    {
+        "id": "81aab286.89725",
+        "type": "change",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "\"Consumo/PM1/\"&topic",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 690,
+        "y": 300,
+        "wires": [
+            [
+                "ca55abd0.232e58"
+            ]
+        ]
+    },
+    {
+        "id": "d9ba20f3.49b02",
+        "type": "switch",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "potencia_activa_total",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "factor_potencia_total",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_A",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_B",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_C",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_N",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 6,
+        "x": 650,
+        "y": 420,
+        "wires": [
+            [
+                "568af720.f912a8",
+                "e9e0ba54.7e8d58"
+            ],
+            [
+                "d3729171.9b5c3"
+            ],
+            [
+                "acb48d9d.18618"
+            ],
+            [
+                "a5758f7b.460b5"
+            ],
+            [
+                "61e2f719.d9ea98"
+            ],
+            [
+                "870f448c.091158"
+            ]
+        ]
+    },
+    {
+        "id": "568af720.f912a8",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "77512a47.9323c4",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "potencia_activa_total",
+        "label": "kW",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 900,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "d3729171.9b5c3",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "77512a47.9323c4",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "factor_potencia_total",
+        "label": "%",
+        "format": "{{value}}",
+        "min": "100",
+        "max": "-100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#00b500"
+        ],
+        "seg1": "0",
+        "seg2": "0",
+        "x": 900,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "acb48d9d.18618",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "a80d65e5.e43e28",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_A",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "e9e0ba54.7e8d58",
+        "type": "ui_chart",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "77512a47.9323c4",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "potencia_activa_total_graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 920,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a5758f7b.460b5",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "a80d65e5.e43e28",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_B",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "61e2f719.d9ea98",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "a80d65e5.e43e28",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_C",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "870f448c.091158",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "a80d65e5.e43e28",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_N",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "d8cdaff9.7c55a",
+        "type": "subflow:4dc335ce.9b905c",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "env": [],
+        "x": 350,
+        "y": 120,
+        "wires": [
+            [
+                "30529a9d.253636",
+                "7403a443.d6c0fc"
+            ]
+        ]
+    },
+    {
+        "id": "c468fccb.dd20c",
+        "type": "subflow:4dc335ce.9b905c",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "x": 350,
+        "y": 180,
+        "wires": [
+            [
+                "30529a9d.253636",
+                "d7707775.fe9e78"
+            ]
+        ]
+    },
+    {
+        "id": "53910bc7.6c35f4",
+        "type": "inject",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "2",
+        "payloadType": "num",
+        "x": 90,
+        "y": 180,
+        "wires": [
+            [
+                "c468fccb.dd20c"
+            ]
+        ]
+    },
+    {
+        "id": "be617da0.44c14",
+        "type": "mqtt out",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "11661772.cec7b9",
+        "x": 890,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "d7707775.fe9e78",
+        "type": "split",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "topic",
+        "x": 510,
+        "y": 700,
+        "wires": [
+            [
+                "36193cbe.d9ec64",
+                "1e0c45ff.acf0ca"
+            ]
+        ]
+    },
+    {
+        "id": "36193cbe.d9ec64",
+        "type": "change",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "\"Consumo/PM2/\"&topic",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 690,
+        "y": 700,
+        "wires": [
+            [
+                "be617da0.44c14"
+            ]
+        ]
+    },
+    {
+        "id": "1e0c45ff.acf0ca",
+        "type": "switch",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "potencia_activa_total",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "factor_potencia_total",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_A",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_B",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_C",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "I_N",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 6,
+        "x": 650,
+        "y": 820,
+        "wires": [
+            [
+                "41af0ad4.332024",
+                "7b33abac.d2b2e4"
+            ],
+            [
+                "815063be.64b64"
+            ],
+            [
+                "2c456dda.488462"
+            ],
+            [
+                "c53c7b24.cff168"
+            ],
+            [
+                "c7d58af3.ec3508"
+            ],
+            [
+                "7dbc36ff.2dd098"
+            ]
+        ]
+    },
+    {
+        "id": "41af0ad4.332024",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "da4f7d83.2bf91",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "potencia_activa_total",
+        "label": "kW",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 900,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "815063be.64b64",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "da4f7d83.2bf91",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "factor_potencia_total",
+        "label": "%",
+        "format": "{{value}}",
+        "min": "100",
+        "max": "-100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#00b500"
+        ],
+        "seg1": "0",
+        "seg2": "0",
+        "x": 900,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "2c456dda.488462",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "fa59db73.68a7a8",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_A",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "7b33abac.d2b2e4",
+        "type": "ui_chart",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "da4f7d83.2bf91",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "potencia_activa_total_graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "useOldStyle": false,
+        "outputs": 1,
+        "x": 920,
+        "y": 820,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c53c7b24.cff168",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "fa59db73.68a7a8",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_B",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "c7d58af3.ec3508",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "fa59db73.68a7a8",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_C",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "7dbc36ff.2dd098",
+        "type": "ui_gauge",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "group": "fa59db73.68a7a8",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "I_N",
+        "label": "A",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "11661772.cec7b9",
+        "type": "mqtt-broker",
+        "name": "mosquitto",
+        "broker": "127.0.0.1",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "77512a47.9323c4",
+        "type": "ui_group",
+        "name": "PM1",
+        "tab": "4540f2a3.c6077c",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "a80d65e5.e43e28",
+        "type": "ui_group",
+        "name": "PM1 - Corrientes",
+        "tab": "4540f2a3.c6077c",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "da4f7d83.2bf91",
+        "type": "ui_group",
+        "name": "PM2",
+        "tab": "4540f2a3.c6077c",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "fa59db73.68a7a8",
+        "type": "ui_group",
+        "name": "PM2 - Corrientes",
+        "tab": "4540f2a3.c6077c",
+        "order": 4,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "4540f2a3.c6077c",
+        "type": "ui_tab",
+        "name": "Consumos",
+        "icon": "fa-tachometer",
+        "order": 10,
+        "disabled": false,
+        "hidden": false
+    }
+]

@@ -1,0 +1,229 @@
+[
+    {
+        "id": "4dc335ce.9b905c",
+        "type": "subflow",
+        "name": "Power Meter Schneider Power Logic PM5110",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 40,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "3e9e8646.c1f65a"
+                    },
+                    {
+                        "id": "28bfed2e.2fe892"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 980,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "2af0243a.eba7ec",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "color": "#DDAA99"
+    },
+    {
+        "id": "64e41f1d.aeb8b",
+        "type": "modbus-flex-getter",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "showStatusActivities": false,
+        "showErrors": false,
+        "logIOActivities": false,
+        "server": "650993c2.faa71c",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "keepMsgProperties": false,
+        "x": 530,
+        "y": 80,
+        "wires": [
+            [
+                "2f379b2a.a47784"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "3e9e8646.c1f65a",
+        "type": "function",
+        "z": "4dc335ce.9b905c",
+        "name": "Datos Modbus",
+        "func": "var id = msg.payload;\n\nmsg.payload = { value: msg.payload, 'fc': 3, 'unitid': id, 'address': 2999 , 'quantity': 120 };\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 200,
+        "y": 80,
+        "wires": [
+            [
+                "64e41f1d.aeb8b",
+                "c1edbb80.6b60f8"
+            ]
+        ]
+    },
+    {
+        "id": "d80fbeb6.69a2d",
+        "type": "function",
+        "z": "4dc335ce.9b905c",
+        "name": "Datos Modbus",
+        "func": "var id = flow.get('unitid');\n\nmsg.payload = { value: msg.payload, 'fc': 3, 'unitid': id, 'address': 21299 , 'quantity': 40 };\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 420,
+        "y": 200,
+        "wires": [
+            [
+                "64e41f1d.aeb8b"
+            ]
+        ]
+    },
+    {
+        "id": "c1edbb80.6b60f8",
+        "type": "delay",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 240,
+        "y": 200,
+        "wires": [
+            [
+                "d80fbeb6.69a2d"
+            ]
+        ]
+    },
+    {
+        "id": "2f379b2a.a47784",
+        "type": "join",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "mode": "custom",
+        "build": "array",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "2",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 710,
+        "y": 80,
+        "wires": [
+            [
+                "2af0243a.eba7ec"
+            ]
+        ]
+    },
+    {
+        "id": "2af0243a.eba7ec",
+        "type": "function",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "func": "var newMsg = {};\nvar obj = {};\nvar values = ['I_A','I_B','I_C','I_N','V_A','V_B','V_C','V_N','P_A','P_B','P_C','potencia_activa_total','potencia_reactiva_total','factor_potencia_total','frecuencia','THD_I_A','THD_I_B','THD_I_C','THD_V_A','THD_V_B','THD_V_C']\nvar registros = [0,2,4,6,28,30,32,34,54,56,58,60,68,84,110,0,2,4,30,32,34]\nvar fLen = registros.length;\n\nfor (i = 0; i < fLen; i++) {\n    const buf = Buffer.allocUnsafe(4);\n    var dato = registros[i];\n    if (i<15){\n        buf.writeUInt16BE(msg.payload[0][dato],0);\n        buf.writeUInt16BE(msg.payload[0][dato+1],2);\n        if (values[i] == 'factor_potencia_total'){\n            if ( buf.readFloatBE(0).toFixed(3) > 1) {\n                 obj[values[i]] = ((2 - buf.readFloatBE(0)) *  -100).toFixed(3);\n            }\n            else {\n                obj[values[i]] = buf.readFloatBE(0).toFixed(3) * 100;\n            }\n        }\n        else {\n            obj[values[i]] = buf.readFloatBE(0).toFixed(3);\n        }\n    }\n    else {\n        buf.writeUInt16BE(msg.payload[1][dato],0);\n        buf.writeUInt16BE(msg.payload[1][dato+1],2);\n        obj[values[i]] = buf.readFloatBE(0).toFixed(3);\n    }\n    \n    //node.warn(`${values[i]} : ${buf.readFloatBE(0).toFixed(3)}`)\n}\n\nobj['unitid'] = flow.get('unitid');\nnewMsg.payload = obj;\n\nreturn newMsg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 860,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "28bfed2e.2fe892",
+        "type": "change",
+        "z": "4dc335ce.9b905c",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "unitid",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 200,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "650993c2.faa71c",
+        "type": "modbus-client",
+        "name": "Power Meter",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "tcpHost": "10.10.10.10",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "unit_id": 1,
+        "commandDelay": 1,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true
+    },
+    {
+        "id": "d8cdaff9.7c55a",
+        "type": "subflow:4dc335ce.9b905c",
+        "z": "ab7d75a0.a74bc8",
+        "name": "",
+        "env": [],
+        "x": 350,
+        "y": 120,
+        "wires": [
+            [
+                "30529a9d.253636",
+                "7403a443.d6c0fc"
+            ]
+        ]
+    }
+]
