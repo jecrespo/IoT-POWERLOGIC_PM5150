@@ -14,16 +14,16 @@ Dado que estos equipos son Modbus RTU, para obtener los datos mediante Modbus TC
 - Modelo: https://www.se.com/es/es/product/EGX150/link-150---ethernet-gateway---2-ethernetport---24-v-dc-and-poe/
 - User Guide: https://download.schneider-electric.com/files?p_enDocType=User+guide&p_File_Name=DOCA0110EN-04.pdf&p_Doc_Ref=DOCA0110EN
 
-Script python: Recoge los datos y los guarda en una BBDD
+**Script python**: Recoge los datos y los guarda en una BBDD
+
+**Node-RED**: recoge los datos y los publica en MQTT y los muestra en dashboard
 - Repositorio Node-RED: https://github.com/aprendiendonodered/POWERLOGIC_PM5150
 
-Node-RED: recoge los datos y los publica en MQTT y los muestra en dashboard
-
-Node-Red: subflow reutilizable publicado en
+**Subflow Node-Red**: subflow reutilizable publicado en
 - https://flows.nodered.org/flow/7c058a46b095af5b8bd469c7c5328454 
 - https://gist.github.com/jecrespo/7c058a46b095af5b8bd469c7c5328454 
 
-Datos recogidos:
+##Datos recogidos:
 
 |Description|Register|Units|Size|Data Type|
 |---|---|---|---|---|
